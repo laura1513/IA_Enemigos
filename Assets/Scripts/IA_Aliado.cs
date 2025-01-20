@@ -7,34 +7,104 @@ using UnityEngine.Events;
 
 public class IA_Aliado : MonoBehaviour
 {
-    //IEnumerator es una interfaz en C# que se utiliza para trabajar con secuencias de elementos o para implementar rutinas (coroutines) en Unity.
-    private NavMeshAgent ally;
+    public Transform jugador; // Referencia al jugador
+    public float distanciaSeguimiento; // Distancia mínima para seguir al jugador
+    public float rangoAtaque; // Rango para atacar enemigos
+    public float velocidadMovimiento = 3f; // Velocidad de movimiento del aliado
+    public int dañoAtaque; // Daño que hace el aliado al atacar
+    public int puntosVida; // Puntos de vida del aliado
 
-    public GameObject jugador;  // Referencia al jugador (puede asignarse en el Inspector)
-    
-    void Start()
+    private Transform objetivoEnemigo; // Referencia al enemigo más cercano
+    private NavMeshAgent agent;
+    private void Start()
     {
-        ally.updateRotation = false;
-        ally.updateUpAxis = false;
-        // Si no se asigna manualmente el jugador, se busca automáticamente en la escena
-        if (jugador == null)
-        {
-            jugador = GameObject.FindWithTag("Player");  // Buscar el jugador por su etiqueta
-        }
-        
-        // Iniciar la corutina que actualiza la posición cada 3 segundos
-        StartCoroutine(SeguirCada3Segundos());
+        agent = GetComponent<NavMeshAgent>();
+        agent.updateRotation = false;
+        agent.updateUpAxis = false;
     }
 
-    IEnumerator SeguirCada3Segundos()
+    void Update()
     {
-        while (true)
+        // Buscar al enemigo más cercano
+        BuscarEnemigoCercano();
+
+        if (objetivoEnemigo != null && Vector3.Distance(transform.position, objetivoEnemigo.position) <= rangoAtaque)
         {
-            yield return new WaitForSeconds(3f);  // Espera 3 segundos
-            if (jugador != null)
+            // Atacar al enemigo si está dentro del rango
+            AtacarEnemigo();
+        }
+        else
+        {
+            // Seguir al jugador si no hay enemigos en rango
+            SeguirJugador();
+        }
+    }
+
+    void BuscarEnemigoCercano()
+    {
+        GameObject[] enemigos = GameObject.FindGameObjectsWithTag("Enemy");
+        float distanciaMasCorta = Mathf.Infinity;
+        Transform enemigoMasCercano = null;
+
+        foreach (GameObject enemigo in enemigos)
+        {
+            float distanciaAlEnemigo = Vector3.Distance(transform.position, enemigo.transform.position);
+            if (distanciaAlEnemigo < distanciaMasCorta)
             {
-                transform.position = jugador.transform.position;  // Actualiza la posición del aliado
+                distanciaMasCorta = distanciaAlEnemigo;
+                enemigoMasCercano = enemigo.transform;
             }
         }
+
+        if (enemigoMasCercano != null && distanciaMasCorta <= rangoAtaque)
+        {
+            objetivoEnemigo = enemigoMasCercano;
+        }
+        else
+        {
+            objetivoEnemigo = null;
+        }
+    }
+
+    void AtacarEnemigo()
+    {
+        // Simula el ataque al enemigo (puedes agregar animaciones o efectos aquí)
+        Debug.Log("Atacando al enemigo: " + objetivoEnemigo.name);
+        objetivoEnemigo.GetComponent<IA_Media>()?.Golpear();
+    }
+
+    void SeguirJugador()
+    {
+        if (Vector3.Distance(transform.position, jugador.position) > distanciaSeguimiento)
+        {
+            // Mover al aliado hacia el jugador sin rotar
+            Vector3 direccion = (jugador.position - transform.position).normalized;
+            transform.position += direccion * velocidadMovimiento * Time.deltaTime;
+            Debug.Log("Siguiendo al jugador");
+        }
+    }
+
+    public void RecibirDaño(int daño)
+    {
+        puntosVida -= daño;
+        Debug.Log("Aliado recibió daño, vida restante: " + puntosVida);
+
+        if (puntosVida <= 0)
+        {
+            Muerte();
+        }
+    }
+
+    void Muerte()
+    {
+        Debug.Log("El aliado ha muerto");
+        Destroy(gameObject);
+    }
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, rangoAtaque);
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, distanciaSeguimiento);
     }
 }
