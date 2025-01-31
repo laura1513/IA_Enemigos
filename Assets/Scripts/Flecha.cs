@@ -5,6 +5,8 @@ using UnityEngine;
 public class Flecha : MonoBehaviour
 {
     private Rigidbody2D _rb;
+    [SerializeField] private Transform ia_media;
+    [SerializeField] private Transform ia_simple;
     private void Start()
     {
         _rb = GetComponent<Rigidbody2D>();
@@ -19,10 +21,15 @@ public class Flecha : MonoBehaviour
         _rb.isKinematic = true;
 
         //Si golpeamos a un enemigo le quitamos vida y destruimos la flecha
-       /* if (collision.gameObject.CompareTag("Enemigo"))
+        if (collision.gameObject.CompareTag("Enemy"))
         {
-            collision.gameObject.GetComponent<IA_Enemigo>().Golpear();
-            Destroy(this.gameObject);
-        }*/
+            if(collision.gameObject.GetComponent<IA_Simple>() != null)
+            {
+                collision.gameObject.GetComponent<IA_Simple>().Golpear();
+            } else if (collision.gameObject.GetComponent<IA_Media>() != null)
+            {
+                collision.gameObject.GetComponent<IA_Media>().Golpear();
+            }
+        }
     }
 }

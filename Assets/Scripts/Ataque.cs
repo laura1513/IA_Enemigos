@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PosFlecha : MonoBehaviour
+public class Ataque : MonoBehaviour
 {
     public GameObject Meele;
     bool isAttacking = false;

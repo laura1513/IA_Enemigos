@@ -68,7 +68,7 @@ public class IA_Aliado : MonoBehaviour
 
     void AtacarEnemigo()
     {
-        // Simula el ataque al enemigo (puedes agregar animaciones o efectos aquí)
+        // Simula el ataque al enemigo
         Debug.Log("Atacando al enemigo: " + objetivoEnemigo.name);
         objetivoEnemigo.GetComponent<IA_Media>()?.Golpear();
     }

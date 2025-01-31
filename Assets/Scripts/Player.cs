@@ -11,6 +11,9 @@ public class Player : MonoBehaviour
     [SerializeField] private float nextDamageTime;
     [SerializeField] ParticleSystem particulasDMG;
     [SerializeField] ParticleSystem particulasMuerte;
+    [SerializeField] GameObject ia_media;
+    [SerializeField] GameObject ia_simple;
+    [SerializeField] GameObject ia_aliado;
     public HealthBar healthBar;
 
     void Start()
@@ -42,8 +45,10 @@ public class Player : MonoBehaviour
         if (currentHealth <= 0)
         {
             Instantiate(particulasMuerte, transform.position, transform.rotation);
-            Destroy(gameObject, 1);
-            SceneManager.LoadSceneAsync(2);
+            Destroy(gameObject);
+            Destroy(ia_media);
+            Destroy(ia_simple);
+            Destroy(ia_aliado);
         }
     }
 }

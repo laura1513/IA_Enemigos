@@ -6,59 +6,56 @@ using UnityEngine.Events;
 
 public class IA_Media : MonoBehaviour
 {
-    //Persigue al aliado y le ataca cuerpo a cuerpo
-    private enum EnemyState { Patrullando, Persiguiendo, Atacando, Esperando, Muerto }
+    public enum EnemyState {Persiguiendo, Atacando, Esperando, Muerto }
     private EnemyState currentState;
 
-    [Header("Puntos de Patrulla")]
-    [SerializeField] private Transform pointA;
-    [SerializeField] private Transform pointB;
 
-    [Header("Variables del Enemigo")]
-    [SerializeField] private float distanciaVision;
-    [SerializeField] private float distanciaAtaque;
-    [SerializeField] private float tiempoEspera;
+    [SerializeField] private float distanciaVision = 30f;
+    [SerializeField] private float distanciaAtaque = 2f;
+    [SerializeField] private float tiempoEspera = 3f;
     [SerializeField] private UnityEvent eventoAtaque;
     [SerializeField] private Transform player;
+
+
     [SerializeField] private int puntosVida;
 
-    private NavMeshAgent agent;
-    private Transform currentPatrolPoint;
-    private float esperaActual;
 
-    private void Start()
+    private NavMeshAgent agent;
+    private float esperaActual;
+    private bool isMoving;
+
+    void Start()
     {
         agent = GetComponent<NavMeshAgent>();
         agent.updateRotation = false;
         agent.updateUpAxis = false;
-        currentPatrolPoint = pointA;
-        currentState = EnemyState.Patrullando;
+
+        currentState = EnemyState.Persiguiendo;
+
+
+        isMoving = false;
     }
 
-    private void Update()
+    void Update()
     {
         switch (currentState)
         {
-            case EnemyState.Patrullando: Patrullar(); break;
-            case EnemyState.Persiguiendo: Perseguir(); break;
-            case EnemyState.Atacando: Atacar(); break;
-            case EnemyState.Esperando: Esperar(); break;
+            case EnemyState.Persiguiendo:
+                Perseguir();
+                break;
+            case EnemyState.Atacando:
+                Atacar();
+                break;
+            case EnemyState.Esperando:
+                Esperar();
+                break;
+            case EnemyState.Muerto:
+                break;
         }
-
-        ActualizarRotacion();
+       
     }
 
-    private void Patrullar()
-    {
-        agent.SetDestination(currentPatrolPoint.position);
-
-        if (Vector3.Distance(transform.position, currentPatrolPoint.position) < 1.5f)
-            currentPatrolPoint = currentPatrolPoint == pointA ? pointB : pointA;
-
-        if (Vector3.Distance(transform.position, player.position) <= distanciaVision)
-            currentState = EnemyState.Persiguiendo;
-    }
-
+   
     private void Perseguir()
     {
         agent.SetDestination(player.position);
@@ -68,62 +65,48 @@ public class IA_Media : MonoBehaviour
             currentState = EnemyState.Atacando;
             agent.ResetPath();
         }
-        else if (Vector3.Distance(transform.position, player.position) > distanciaVision)
-        {
-            currentState = EnemyState.Patrullando;
-        }
     }
 
     private void Atacar()
     {
-        if (Vector3.Distance(transform.position, player.position) <= distanciaAtaque)
-        {
-            player.GetComponent<IA_Aliado>()?.RecibirDaño(1); // Ajusta el daño según sea necesario
-            eventoAtaque?.Invoke();
-        }
-        CambiarEstadoConEspera(EnemyState.Esperando);
-    }
+        eventoAtaque?.Invoke();
+        currentState = EnemyState.Esperando;
 
+        esperaActual = tiempoEspera;
+    }
 
     private void Esperar()
     {
-        if ((esperaActual -= Time.deltaTime) <= 0)
-            CambiarEstado(EnemyState.Patrullando);
-    }
+        esperaActual -= Time.deltaTime;
 
-    private void CambiarEstado(EnemyState nuevoEstado)
-    {
-        currentState = nuevoEstado;
-        if (nuevoEstado == EnemyState.Patrullando)
-            agent.SetDestination(currentPatrolPoint.position);
-    }
+        if (esperaActual <= 0)
+        {
+            currentState = EnemyState.Persiguiendo;
 
-    private void CambiarEstadoConEspera(EnemyState nuevoEstado)
-    {
-        currentState = nuevoEstado;
-        esperaActual = tiempoEspera;
+        }
     }
 
     public void Golpear()
     {
-        if (currentState == EnemyState.Muerto || currentState == EnemyState.Esperando) return;
-
-        if (--puntosVida <= 0)
+        if (currentState != EnemyState.Esperando && currentState != EnemyState.Muerto)
         {
-            GetComponent<BoxCollider2D>().enabled = false;
-            currentState = EnemyState.Muerto;
-            Destroy(gameObject, 1);
-        }
-        else
-        {
-            CambiarEstadoConEspera(EnemyState.Esperando);
-        }
-    }
 
-    private void ActualizarRotacion()
-    {
-        if (agent.velocity.sqrMagnitude > 0.01f)
-            transform.rotation = Quaternion.Euler(0, agent.velocity.x > 0 ? 180 : 0, 0);
+            puntosVida -= 1;
+
+            if (puntosVida <= 0)
+            {
+                GetComponent<BoxCollider2D>().enabled = false;
+                agent.ResetPath();
+                currentState = EnemyState.Muerto;
+                Destroy(this.gameObject, 1);
+            }
+            else
+            {
+                agent.ResetPath();
+                currentState = EnemyState.Esperando;
+                esperaActual = tiempoEspera;
+            }
+        }
     }
     private void OnDrawGizmosSelected()
     {
@@ -132,4 +115,5 @@ public class IA_Media : MonoBehaviour
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, distanciaVision);
     }
+
 }
